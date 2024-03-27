@@ -8,22 +8,27 @@ from sklearn.model_selection import cross_val_predict
 from sklearn.neighbors import KNeighborsRegressor
 
 
-def show_y_diff(y: np.ndarray, y_ped: np.ndarray) -> None:
+def remove_invalid_y(dataframe: pd.DataFrame, y: np.ndarray, y_ped: np.ndarray) -> None:
+    new_dataset: bool = False
     for val1, val2 in zip(y, y_ped):
         diff = abs(val1 - val2)
         if diff > 1:
+            new_dataset = True
+            dataframe = dataframe[dataframe['f1_score_mean'] != val1]
             print(f"y  = {val1} y_pred = {val2} diff =  {diff}")
+    if new_dataset:
+        dataframe.to_csv('datasets/new_dataset.csv', index=False)
 
 
-def train(X: np.ndarray, y: np.ndarray, model, cv: int) -> None:
+def train(dataframe: pd.DataFrame, X: np.ndarray, y: np.ndarray, model, cv: int) -> None:
     model.fit(X, y)
 
     y_pred = cross_val_predict(model, X, y, cv=cv)
-    show_y_diff(y, y_pred)
-    r2_ = r2_score(y, y_pred)
+    remove_invalid_y(dataframe, y, y_pred)
+    r2 = r2_score(y, y_pred)
     mse = mean_squared_error(y, y_pred)
-    print(f"{model} - Mean Squared error (MSE): {mse}")
-    print(f"{model} - Coefficient of Determination (R²): {r2_}")
+    print(f"{model} - Mean Squared error (MSE): {mse} ({mse * 100:.2f}%)")
+    print(f"{model} - Coefficient of Determination (R²): {r2}")
 
     plot(X, y, y_pred, model)
 
@@ -54,12 +59,11 @@ def remove_duplicates_df(dataframe: pd.DataFrame):
 
 if __name__ == '__main__':
 
-    df = pd.read_csv('./datasets/metadaset_nonan.csv')
+    df = pd.read_csv('./datasets/metadataset_26_06_2024.csv')
 
-    df = remove_duplicates_df(df)
-    
-    df = df.drop(columns=['dataset_name']) 
-    df = df.drop(columns=['did'])
+    # df = remove_duplicates_df(df)
+    # df = df.drop(columns=['dataset_name'])
+    # df = df.drop(columns=['did'])
     
     X = df.drop(columns=['f1_score_mean']) .values.tolist()
     y = df['f1_score_mean'] 
@@ -67,5 +71,5 @@ if __name__ == '__main__':
     X = np.array(X)
     y = np.array(y)
 
-    train(X, y, KNeighborsRegressor(n_neighbors=5), 10)
-    train(X, y, LinearRegression(), 10)
+    train(df, X, y, KNeighborsRegressor(n_neighbors=5), 10)
+    train(df, X, y, LinearRegression(), 10)
