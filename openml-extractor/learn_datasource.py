@@ -11,6 +11,7 @@ LOGGER = logging.getLogger(__name__)
 
 MAX_ITER_LOGISTIC_REGRESSION = 1000000000
 
+
 def get_f1_score(dataset_data):
     try:
         csv_data = []
